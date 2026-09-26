@@ -7,7 +7,7 @@ import time
 import math
 
 # PASTE YOUR NEW DEPLOYMENT URL HERE
-WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbzX6FJ1WUhqxy6lXWRgPrzLFfM8qSN6uPfrtR2scCrzECtC18HKLbGWlk3q0m4Ehp1xVQ/exec"
+WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbzuPew_P8sl2JpqQ64Y3IzX6eotm7Qkrhm9U-_ohD3VNg9j5v4VY21JT7NPPT4DOrHcxQ/exec"
 
 def sanitize(val):
     try:
