@@ -20,7 +20,7 @@ jobs:
           python-version: '3.10'
           
       - name: Install Dependencies
-        run: pip install requests yfinance pandas
+        run: pip install --upgrade --no-cache-dir requests yfinance pandas curl_cffi
         
       - name: Execute Script
         run: python automation1.py
