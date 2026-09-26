@@ -1,0 +1,25 @@
+name: NSE Data Pipeline
+
+on:
+  schedule:
+    # Runs automatically at 11:30 AM UTC (5:00 PM IST) Monday through Friday
+    - cron: '30 11 * * 1-5'
+  workflow_dispatch: # Allows the Google Sheets button to trigger it manually
+
+jobs:
+  update-data:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+        
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+          
+      - name: Install Dependencies
+        run: pip install requests yfinance pandas
+        
+      - name: Execute Script
+        run: python automation1.py
