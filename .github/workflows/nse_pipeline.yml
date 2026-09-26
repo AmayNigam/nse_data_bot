@@ -24,6 +24,3 @@ jobs:
         
       - name: Execute Script
         run: python automation1.py
-        
-      - name: Execute Script
-        run: python automation1.py
