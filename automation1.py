@@ -5,22 +5,11 @@ from datetime import datetime, timedelta
 import io
 import time
 import math
-import random
 
 # PASTE YOUR ACTIVE WEBHOOK URL HERE
 WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbzuPew_P8sl2JpqQ64Y3IzX6eotm7Qkrhm9U-_ohD3VNg9j5v4VY21JT7NPPT4DOrHcxQ/exec"
 
-# A list of completely different browser fingerprints to evade Yahoo's detection
-USER_AGENTS = [
-    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
-    'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:123.0) Gecko/20100101 Firefox/123.0',
-    'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-    'Mozilla/5.0 (Macintosh; Intel Mac OS X 14.3; rv:122.0) Gecko/20100101 Firefox/122.0'
-]
-
 def sanitize(val):
-    """Cleans raw data to ensure it doesn't crash Google Sheets"""
     try:
         if isinstance(val, str) and val.strip() == '-': return 0.0
         val = float(val)
@@ -31,10 +20,15 @@ def sanitize(val):
 
 print("Step 1: Fetching official NSE Bhavcopy data...")
 
-# Initial session just for NSE
-session = requests.Session()
-session.headers.update({'User-Agent': random.choice(USER_AGENTS)})
-session.get("https://www.nseindia.com", timeout=10)
+# Create ONE single, robust session for the entire script
+master_session = requests.Session()
+master_session.headers.update({
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+    'Accept': '*/*',
+    'Connection': 'keep-alive'
+})
+
+master_session.get("https://www.nseindia.com", timeout=10)
 
 bhavcopy_df = pd.DataFrame()
 for i in range(7):
@@ -42,7 +36,7 @@ for i in range(7):
     date_str = d.strftime("%d%m%Y")
     url = f"https://nsearchives.nseindia.com/products/content/sec_bhavdata_full_{date_str}.csv"
     
-    res = session.get(url)
+    res = master_session.get(url)
     if res.status_code == 200 and len(res.text) > 1000:
         print(f"-> Found official NSE Delivery data for {d.strftime('%d-%b-%Y')}")
         bhavcopy_df = pd.read_csv(io.StringIO(res.text))
@@ -50,7 +44,6 @@ for i in range(7):
         bhavcopy_df['SERIES'] = bhavcopy_df['SERIES'].astype(str).str.strip()
         bhavcopy_df['SYMBOL'] = bhavcopy_df['SYMBOL'].astype(str).str.strip()
         
-        # Capture all ~2,300 stocks
         equity_series = ['EQ', 'BE', 'BZ', 'SM', 'ST']
         bhavcopy_df = bhavcopy_df[bhavcopy_df['SERIES'].isin(equity_series)]
         bhavcopy_df = bhavcopy_df.drop_duplicates(subset=['SYMBOL'])
@@ -67,9 +60,7 @@ print(f"\nStep 2: Processing {total_stocks} stocks...")
 
 timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 all_rows = []
-
-# BATCH_SIZE set to 50 to avoid triggering rate limits
-BATCH_SIZE = 50 
+BATCH_SIZE = 80 
 
 for i in range(0, total_stocks, BATCH_SIZE):
     chunk = symbols[i:i + BATCH_SIZE]
@@ -77,25 +68,17 @@ for i in range(0, total_stocks, BATCH_SIZE):
     
     print(f"Downloading batch: [{i+1} to {min(i+BATCH_SIZE, total_stocks)}]")
     
-    # CRITICAL FIX: Generate a brand new identity & clear cookies for EVERY batch
-    yf_session = requests.Session()
-    yf_session.headers.update({
-        'User-Agent': random.choice(USER_AGENTS),
-        'Accept': '*/*',
-        'Connection': 'keep-alive'
-    })
-    
     data = None
     try:
+        # We reuse the master_session so we don't trigger the token limit
         data = yf.download(yf_symbols, period="6mo", group_by="ticker", 
-                           session=yf_session, threads=False, progress=False)
+                           session=master_session, threads=False, progress=False)
     except Exception as e:
         print(f"Yahoo Warning: {e}")
 
     for sym in chunk:
         yf_sym = f"{sym}.NS"
         
-        # Baseline metrics from NSE Bhavcopy
         try: last_price = sanitize(bhavcopy_df.loc[sym, 'CLOSE_PRICE'])
         except: last_price = 0.0
             
@@ -110,7 +93,6 @@ for i in range(0, total_stocks, BATCH_SIZE):
 
         t_1w, t_1m, t_3m, t_6m, wk_pct, mo_pct = 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
 
-        # Calculate Historical Metrics from Yahoo if available
         if data is not None and not data.empty:
             try:
                 if isinstance(data.columns, pd.MultiIndex):
@@ -141,18 +123,16 @@ for i in range(0, total_stocks, BATCH_SIZE):
 
         mcap_change_formula = f'=IFERROR((GOOGLEFINANCE("NSE:{sym}", "marketcap") / 10000000) * (GOOGLEFINANCE("NSE:{sym}", "changepct") / 100), "N/A")'
 
-        # Save in memory buffer
         all_rows.append([
             timestamp, sym, last_price, t_1d, t_1w, t_1m, t_3m, t_6m, 
             traded_vol, delivery_pct, wk_pct, mo_pct, mcap_change_formula
         ])
 
-    # CRITICAL FIX: Sleep for 4 to 7 seconds between batches to evade detection
-    time.sleep(random.uniform(4.0, 7.0))
+    # A short breather between batches
+    time.sleep(2)
 
 print(f"\nTotal number of stocks processed: {len(all_rows)}")
 
-# FAILSAFE: Protect Google Sheets if block occurs
 if len(all_rows) < 2000:
     print(f"Warning: Only {len(all_rows)} stocks found. Aborting to protect Google Sheet.")
     exit(1)
