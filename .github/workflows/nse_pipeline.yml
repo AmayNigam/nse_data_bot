@@ -1,10 +1,11 @@
-name: NSE Data Pipeline
+name: Daily NSE Update
 
 on:
   schedule:
-    # Runs automatically at 11:30 AM UTC (5:00 PM IST) Monday through Friday
-    - cron: '30 11 * * 1-5'
-  workflow_dispatch: # Allows the Google Sheets button to trigger it manually
+    # 13:30 UTC = 7:00 PM IST, Monday (1) through Friday (5)
+    - cron: '30 13 * * 1-5'
+  
+  workflow_dispatch: 
 
 jobs:
   update-data:
@@ -20,6 +21,9 @@ jobs:
           
       - name: Install Dependencies
         run: pip install requests yfinance pandas
+        
+      - name: Execute Script
+        run: python automation1.pys
         
       - name: Execute Script
         run: python automation1.py
