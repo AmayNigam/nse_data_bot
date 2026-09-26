@@ -23,7 +23,7 @@ jobs:
         run: pip install requests yfinance pandas
         
       - name: Execute Script
-        run: python automation1.pys
+        run: python automation1.py
         
       - name: Execute Script
         run: python automation1.py
