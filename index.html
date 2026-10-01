@@ -1,0 +1,174 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>NSE Market Snapshot Dashboard</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);--bg:#f5f6f8;--card:#fff;--tx:#1b1f27;--mu:#6b7280;--bd:#e3e6ea;--ac:#2563eb;--up:#16a34a;--dn:#dc2626}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f1319;--card:#181d26;--tx:#e8ebf0;--mu:#8b94a3;--bd:#272e3a;--ac:#5b8cff;--up:#34d399;--dn:#f87171}}
+:root[data-theme="dark"]{--bg:#0f1319;--card:#181d26;--tx:#e8ebf0;--mu:#8b94a3;--bd:#272e3a;--ac:#5b8cff;--up:#34d399;--dn:#f87171}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:14px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding:16px;max-width:1280px;margin:auto}
+h1{font-size:22px;margin:0;color:#fff}.sub{color:#e0e7ff;font-size:12px;margin:2px 0 0}.hd{background:linear-gradient(120deg,#4f46e5,#06b6d4 60%,#10b981);border-radius:12px;padding:16px 18px;margin-bottom:14px}
+.bar{display:flex;flex-wrap:wrap;gap:10px;align-items:end;background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:12px;margin-bottom:12px}
+.bar label{display:flex;flex-direction:column;font-size:11px;color:var(--mu);gap:3px}
+input,select,button{font:inherit;color:var(--tx);background:var(--bg);border:1px solid var(--bd);border-radius:6px;padding:6px 8px}button{cursor:pointer}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:12px}
+.k{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:12px}.k b{display:block;font-size:22px;margin-top:2px}.k{border-top:4px solid var(--kc)}.k:nth-child(1){--kc:#6366f1}.k:nth-child(2){--kc:#06b6d4}.k:nth-child(3){--kc:#f59e0b}.k:nth-child(4){--kc:#ec4899}.k:nth-child(5){--kc:#10b981}.k span{font-size:11px;color:var(--mu)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:12px;margin-bottom:12px}
+.c{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:12px}.c h2{font-size:13px;margin:0 0 8px}.c div.w{position:relative;height:260px}
+.tw{overflow-x:auto}tbody tr:nth-child(even){background:color-mix(in srgb,var(--ac) 6%,transparent)}table{border-collapse:collapse;width:100%;font-size:13px}th,td{padding:6px 8px;text-align:right;border-bottom:1px solid var(--bd);white-space:nowrap}
+th:first-child,td:first-child{text-align:left}th{cursor:pointer;color:var(--mu);font-weight:600;font-size:12px}th.on{color:var(--ac)}
+.go{background:#fff;color:#4f46e5;text-decoration:none;font-weight:600;padding:8px 14px;border-radius:8px;white-space:nowrap}.go:hover{background:#eef2ff}.up{color:var(--up)}.dn{color:var(--dn)}
+</style></head><body>
+<div class="hd" style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap"><div><h1>📈 NSE Market Snapshot</h1><div class="sub" id="sub"></div></div><a class="go" href="https://docs.google.com/spreadsheets/d/1TBRYtu-X3MOMeq3Jn66rjYkCN5qt3R6PoXfnqhENRDg/edit?gid=0#gid=0" target="_blank" rel="noopener noreferrer">📄 Open source sheet ↗</a></div>
+<div class="bar">
+<label>Symbol search<input id="q" placeholder="e.g. TATA"></label>
+<label>Min 1D turnover<select id="mt"><option value="0">Any</option><option value="1">&gt; 1</option><option value="5">&gt; 5</option><option value="20">&gt; 20</option><option value="100">&gt; 100</option></select></label>
+<label>Weekly move<select id="mv"><option value="all">All</option><option value="up">Gainers</option><option value="dn">Losers</option></select></label>
+<label>Min delivery %: <span id="dv">0</span><input id="md" type="range" min="0" max="100" value="0"></label>
+<button id="rs">Reset</button>
+</div>
+<div class="kpis" id="kp"></div>
+<div class="grid">
+<div class="c"><h2>Top 10 by 1D turnover</h2><div class="w"><canvas id="c1"></canvas></div></div>
+<div class="c"><h2>Weekly % change: top 8 gainers &amp; losers</h2><div class="w"><canvas id="c2"></canvas></div></div>
+<div class="c"><h2>Delivery % distribution (number of stocks)</h2><div class="w"><canvas id="c3"></canvas></div></div>
+<div class="c"><h2>Delivery % vs weekly % change</h2><div class="w"><canvas id="c4"></canvas></div></div><div class="c"><h2>Market breadth (weekly)</h2><div class="w"><canvas id="c5"></canvas></div></div><div class="c"><h2>Daily market-cap change (Cr): top gainers &amp; losers</h2><div class="w"><canvas id="c6"></canvas></div></div><div class="c"><h2>Stocks by price band (₹)</h2><div class="w"><canvas id="c7"></canvas></div></div><div class="c"><h2>Volume surge: 1D turnover vs weekly daily average (x)</h2><div class="w"><canvas id="c8"></canvas></div></div>
+</div>
+<div class="c"><h2>Stocks <span id="cnt" style="color:var(--mu);font-weight:400"></span> (click a header to sort, top 25 shown)</h2><div class="tw"><table><thead><tr id="th"></tr></thead><tbody id="tb"></tbody></table></div></div>
+<script>
+
+const API_URL = "https://script.google.com/macros/s/AKfycbz7Nlk-L_BlrE001H4ewDXmZZHRmYtvZNWkyFR_lFrwY8EyxDRzU1GGpPKe14mAxPPiMw/exec";
+
+let D = [];
+let RAW = [];
+let TS = "";
+const $ = i => document.getElementById(i);
+const f = (n, d = 2) => n == null ? "–" : n.toLocaleString("en-IN", { maximumFractionDigits: d });
+const cols = [
+  ["s", "Symbol"], ["p", "Last price"], ["t", "1D turnover"], ["tw", "1W turnover"],
+  ["tm", "1M turnover"], ["v", "Volume"], ["d", "Delivery %"], ["w", "Weekly %"],
+  ["m", "Monthly %"], ["c", "MCap chg (Cr)"]
+];
+const pal = ["#6366f1", "#06b6d4", "#f59e0b", "#ec4899", "#10b981", "#8b5cf6", "#f97316", "#14b8a6", "#3b82f6", "#ef4444"];
+let sk = "t", sd = -1, ch = {};
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+
+// Fetch live records from Google Apps Script
+fetch(API_URL)
+  .then(res => res.json())
+  .then(data => {
+    if (!data || data.length < 2) throw new Error("Empty dataset");
+    
+    TS = data[1][0] || "Latest Close";
+    
+    // Map sheet columns to dashboard keys
+    RAW = data.slice(1).map(r => [
+      String(r[1] || "").trim(),
+      parseFloat(r[2]) || 0,
+      parseFloat(r[3]) || 0,
+      parseFloat(r[4]) || 0,
+      parseFloat(r[5]) || 0,
+      parseInt(r[8], 10) || 0,
+      parseFloat(r[9]) || 0,
+      parseFloat(r[10]) || 0,
+      parseFloat(r[11]) || 0,
+      r[12] === "N/A" || r[12] == null ? null : parseFloat(r[12])
+    ]);
+
+    D = RAW.map(r => ({ s: r[0], p: r[1], t: r[2], tw: r[3], tm: r[4], v: r[5], d: r[6], w: r[7], m: r[8], c: r[9] }));
+    $("sub").textContent = "Snapshot: " + TS + " · " + D.length + " symbols · Source: Google Sheet";
+    
+    initEvents();
+    render();
+  })
+  .catch(err => {
+    $("sub").textContent = "Failed to load live data. Use the button to access the Google Sheet directly.";
+    console.error("Dashboard fetch error:", err);
+  });
+
+function flt() {
+  const q = $("q").value.trim().toUpperCase(),
+        mt = +$("mt").value,
+        mv = $("mv").value,
+        md = +$("md").value;
+  return D.filter(x => x.s.includes(q) && x.t >= mt && x.d >= md && (mv === "all" || (mv === "up" ? x.w > 0 : x.w < 0)));
+}
+
+function mk(id, cfg) {
+  if (ch[id]) ch[id].destroy();
+  ch[id] = new Chart($(id), cfg);
+}
+
+function base() {
+  const g = css("--bd"), t = css("--mu");
+  return { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { color: t }, grid: { color: g } }, y: { ticks: { color: t }, grid: { color: g } } } };
+}
+
+function render() {
+  const a = flt(), up = css("--up"), dn = css("--dn"), ac = css("--ac");
+  $("dv").textContent = $("md").value;
+  $("cnt").textContent = "(" + a.length + " of " + D.length + ")";
+  
+  const sum = k => a.reduce((s, x) => s + (x[k] || 0), 0);
+  const med = k => { const v = a.map(x => x[k]).sort((p, q) => p - q); return v.length ? v[v.length >> 1] : null; };
+  const adv = a.filter(x => x.w > 0).length, dec = a.filter(x => x.w < 0).length, mc = sum("c");
+
+  $("kp").innerHTML = [
+    ["Stocks", f(a.length, 0)],
+    ["Total 1D turnover", f(sum("t"), 0)],
+    ["Median delivery %", f(med("d"), 1) + "%"],
+    ["Gainers / losers (wk)", adv + " / " + dec],
+    ["Net MCap change (Cr)", '<span class="' + (mc >= 0 ? "up" : "dn") + '">' + f(mc, 0) + '</span>']
+  ].map(k => '<div class="k"><span>' + k[0] + '</span><b>' + k[1] + '</b></div>').join("");
+
+  const t10 = [...a].sort((x, y) => y.t - x.t).slice(0, 10);
+  mk("c1", { type: "bar", data: { labels: t10.map(x => x.s), datasets: [{ data: t10.map(x => x.t), backgroundColor: pal, borderRadius: 4 }] }, options: { ...base(), indexAxis: "y" } });
+
+  const sw = [...a].sort((x, y) => y.w - x.w), mv = [...sw.slice(0, 8), ...sw.slice(-8)].filter((x, i, r) => r.indexOf(x) === i);
+  mk("c2", { type: "bar", data: { labels: mv.map(x => x.s), datasets: [{ data: mv.map(x => x.w), backgroundColor: mv.map(x => x.w >= 0 ? up : dn) }] }, options: { ...base(), indexAxis: "y" } });
+
+  const b = Array(10).fill(0);
+  a.forEach(x => b[Math.min(9, Math.floor(x.d / 10))]++);
+  mk("c3", { type: "bar", data: { labels: b.map((_, i) => i * 10 + "-" + (i * 10 + 10)), datasets: [{ data: b, backgroundColor: pal, borderRadius: 4 }] }, options: base() });
+
+  const so = base();
+  so.plugins.tooltip = { callbacks: { label: c => c.raw.s + ": " + c.raw.x + "% deliv, " + c.raw.y + "% wk" } };
+  mk("c4", { type: "scatter", data: { datasets: [{ data: a.filter(x => Math.abs(x.w) < 100).map(x => ({ x: x.d, y: x.w, s: x.s })), backgroundColor: "#8b5cf6aa", pointRadius: 2.5 }] }, options: so });
+
+  mk("c5", { type: "doughnut", data: { labels: ["Gainers", "Unchanged", "Losers"], datasets: [{ data: [adv, a.length - adv - dec, dec], backgroundColor: [up, "#94a3b8", dn], borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, cutout: "62%", plugins: { legend: { position: "bottom", labels: { color: css("--mu") } } } } });
+
+  const mc2 = a.filter(x => x.c != null).sort((x, y) => y.c - x.c), mm = [...mc2.slice(0, 6), ...mc2.slice(-6)].filter((x, i, r) => r.indexOf(x) === i);
+  mk("c6", { type: "bar", data: { labels: mm.map(x => x.s), datasets: [{ data: mm.map(x => x.c), backgroundColor: mm.map(x => x.c >= 0 ? up : dn), borderRadius: 4 }] }, options: { ...base(), indexAxis: "y" } });
+
+  const E = [0, 50, 200, 500, 1000, 5000, 1e12], pb = Array(6).fill(0);
+  a.forEach(x => { for (let i = 0; i < 6; i++) if (x.p >= E[i] && x.p < E[i + 1]) { pb[i]++; break; } });
+  mk("c7", { type: "bar", data: { labels: ["<50", "50-200", "200-500", "500-1K", "1K-5K", "5K+"], datasets: [{ data: pb, backgroundColor: pal.slice(0, 6), borderRadius: 4 }] }, options: base() });
+
+  const sg = a.filter(x => x.tw > 0 && x.t >= 1).map(x => ({ s: x.s, r: +(x.t / (x.tw / 5)).toFixed(2) })).sort((x, y) => y.r - x.r).slice(0, 10);
+  mk("c8", { type: "bar", data: { labels: sg.map(x => x.s), datasets: [{ data: sg.map(x => x.r), backgroundColor: [...pal].reverse(), borderRadius: 4 }] }, options: { ...base(), indexAxis: "y" } });
+
+  $("th").innerHTML = cols.map(c => '<th data-k="' + c[0] + '" class="' + (c[0] === sk ? "on" : "") + '">' + c[1] + (c[0] === sk ? (sd < 0 ? " ▼" : " ▲") : "") + '</th>').join("");
+  const r = [...a].sort((x, y) => { const p = x[sk], q = y[sk]; return (typeof p === "string" ? p.localeCompare(q) : (p ?? -1e18) - (q ?? -1e18)) * sd; }).slice(0, 25);
+  $("tb").innerHTML = r.map(x => "<tr><td>" + x.s + "</td><td>" + f(x.p) + "</td><td>" + f(x.t) + "</td><td>" + f(x.tw) + "</td><td>" + f(x.tm) + "</td><td>" + f(x.v, 0) + "</td><td>" + f(x.d, 1) + '</td><td class="' + (x.w >= 0 ? "up" : "dn") + '">' + f(x.w) + '</td><td class="' + (x.m >= 0 ? "up" : "dn") + '">' + f(x.m) + "</td><td>" + f(x.c, 1) + "</td></tr>").join("");
+  
+  document.querySelectorAll("th").forEach(h => {
+    h.onclick = () => {
+      const k = h.dataset.k;
+      sd = sk === k ? -sd : -1;
+      sk = k;
+      render();
+    };
+  });
+}
+
+function initEvents() {
+  ["q", "mt", "mv", "md"].forEach(i => $(i).oninput = render);
+  $("rs").onclick = () => {
+    $("q").value = "";
+    $("mt").value = "0";
+    $("mv").value = "all";
+    $("md").value = 0;
+    render();
+  };
+}
+</script></body></html>
