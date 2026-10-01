@@ -21,4 +21,6 @@ jobs:
         run: pip install --upgrade --no-cache-dir requests yfinance pandas curl_cffi
         
       - name: Execute Script
+        env:
+          WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
         run: python automation1.py
