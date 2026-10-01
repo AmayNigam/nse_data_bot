@@ -1,9 +1,9 @@
 name: Daily NSE Update
-
 on:
   schedule:
-    # 13:30 UTC = 7:00 PM IST, Monday (1) through Friday (5)
-    - cron: '30 13 * * 1-5'
+    # 14:12 UTC is 7:42 PM IST. 
+    # This odd time bypasses server queues and ensures NSE Bhavcopy is published.
+    - cron: '12 14 * * 1-5'
   
   workflow_dispatch: 
 
