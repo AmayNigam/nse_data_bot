@@ -1,3 +1,4 @@
+import os
 import requests
 import yfinance as yf
 import pandas as pd
@@ -7,7 +8,11 @@ import time
 import math
 
 # PASTE YOUR ACTIVE WEBHOOK URL HERE
-WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbzuPew_P8sl2JpqQ64Y3IzX6eotm7Qkrhm9U-_ohD3VNg9j5v4VY21JT7NPPT4DOrHcxQ/exec"
+WEBHOOK_URL = os.environ.get("WEBHOOK_URL")
+
+if not WEBHOOK_URL:
+    print("Fatal Error: WEBHOOK_URL secret is missing.")
+    exit(1)
 
 def sanitize(val):
     try:
