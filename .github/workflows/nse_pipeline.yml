@@ -1,8 +1,8 @@
 name: Daily NSE Update
 on:
   schedule:
-    # 14:12 UTC perfectly matches 7:42 PM IST
-    - cron: '12 14 * * 1-5'
+    # Runs at 13:45 UTC (7:15 PM IST) Monday-Friday
+    - cron: '45 13 * * 1-5'
   workflow_dispatch: 
 
 jobs:
